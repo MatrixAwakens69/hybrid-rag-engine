@@ -15,6 +15,22 @@ services:
       retries: 20
       start_period: 5s
 
+  data-init:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    user: "0:0"
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "mkdir -p /data/sources /data/jobs /data/quarantine && chown -R 10001:10001 /data"
+    volumes:
+      - type: volume
+        source: source-and-job-data
+        target: /data
+        volume:
+          nocopy: true
+
   api:
     build:
       context: .
@@ -31,10 +47,16 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - source-and-job-data:/data
+      - type: volume
+        source: source-and-job-data
+        target: /data
+        volume:
+          nocopy: true
     depends_on:
       qdrant:
         condition: service_healthy
+      data-init:
+        condition: service_completed_successfully
     healthcheck:
       test:
         [
@@ -62,9 +84,13 @@ services:
       HRE_JOB_MANIFEST_PATH: /data/jobs
       HRE_QUARANTINE_PATH: /data/quarantine
     volumes:
-      - source-and-job-data:/data
+      - type: volume
+        source: source-and-job-data
+        target: /data
+        volume:
+          nocopy: true
     depends_on:
-      qdrant:
+      api:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1"]
