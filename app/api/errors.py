@@ -10,7 +10,18 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.domain.errors import DependencyUnavailableError, ServiceError
+from app.domain.errors import (
+    DependencyUnavailableError,
+    DocumentNotFoundError,
+    ForbiddenError,
+    InvalidUploadError,
+    ManifestConflictError,
+    RequestTimeoutError,
+    ServiceError,
+    UnauthorizedError,
+    UnsupportedMediaTypeError,
+    UploadTooLargeError,
+)
 from app.domain.models.common import ErrorDetail, ErrorResponse, FieldViolation
 
 logger = structlog.get_logger(__name__)
@@ -21,9 +32,18 @@ def _request_id(request: Request) -> str:
     return value if isinstance(value, str) else uuid4().hex
 
 
-def _response(detail: ErrorDetail, status_code: int) -> JSONResponse:
+def _response(
+    detail: ErrorDetail,
+    status_code: int,
+    *,
+    headers: dict[str, str] | None = None,
+) -> JSONResponse:
     body = ErrorResponse(error=detail)
-    return JSONResponse(status_code=status_code, content=body.model_dump(mode="json"))
+    return JSONResponse(
+        status_code=status_code,
+        content=body.model_dump(mode="json"),
+        headers=headers,
+    )
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -53,7 +73,26 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(ServiceError)
     async def service_error_handler(request: Request, exc: ServiceError) -> JSONResponse:
-        status_code = 503 if isinstance(exc, DependencyUnavailableError) else 400
+        status_by_type: dict[type[ServiceError], int] = {
+            DependencyUnavailableError: 503,
+            UnauthorizedError: 401,
+            ForbiddenError: 403,
+            DocumentNotFoundError: 404,
+            UploadTooLargeError: 413,
+            UnsupportedMediaTypeError: 415,
+            InvalidUploadError: 422,
+            ManifestConflictError: 409,
+            RequestTimeoutError: 408,
+        }
+        status_code = next(
+            (
+                status
+                for error_type, status in status_by_type.items()
+                if isinstance(exc, error_type)
+            ),
+            400,
+        )
+        headers = {"WWW-Authenticate": "Bearer"} if isinstance(exc, UnauthorizedError) else None
         return _response(
             ErrorDetail(
                 code=exc.code,
@@ -62,6 +101,7 @@ def register_exception_handlers(app: FastAPI) -> None:
                 retryable=exc.retryable,
             ),
             status_code,
+            headers=headers,
         )
 
     @app.exception_handler(Exception)

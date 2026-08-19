@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     qdrant_url: str = "http://localhost:6333"
     qdrant_timeout_seconds: int = Field(default=5, gt=0, le=60)
     qdrant_collection_alias: str = "hybrid_chunks_current"
+    qdrant_document_collection: str = "hybrid_documents_v1"
+    qdrant_auth_collection: str = "hybrid_auth_v1"
 
     source_volume_path: Path = Path("data/sources")
     job_manifest_path: Path = Path("data/jobs")
@@ -64,8 +66,33 @@ class Settings(BaseSettings):
     max_upload_bytes: int = Field(default=50 * 1024 * 1024, ge=1024, le=1024**3)
     request_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
     max_metadata_bytes: int = Field(default=16 * 1024, ge=256, le=1024**2)
+    max_pdf_pages: int = Field(default=500, ge=1, le=10_000)
+    max_text_lines: int = Field(default=250_000, ge=1, le=5_000_000)
+    max_csv_rows: int = Field(default=250_000, ge=1, le=5_000_000)
+    max_csv_columns: int = Field(default=500, ge=1, le=10_000)
+    max_element_characters: int = Field(default=250_000, ge=1_000, le=1_000_000)
+    parse_timeout_seconds: float = Field(default=120.0, gt=0, le=3600)
+
+    parser_version: str = "phase1-v1"
+    chunker_version: str = "structure-v1"
+    index_schema_version: str = "v1"
+    chunk_target_tokens: int = Field(default=400, ge=32, le=8192)
+    chunk_max_tokens: int = Field(default=600, ge=32, le=16_384)
+    chunk_overlap_tokens: int = Field(default=50, ge=0, le=2048)
+    worker_poll_seconds: float = Field(default=1.0, gt=0, le=60)
+    manifest_stale_seconds: int = Field(default=900, ge=30, le=86_400)
 
     bootstrap_admin_key: SecretStr = SecretStr("change-me")
+    bootstrap_tenant_id: str = "tenant-default"
+    bootstrap_key_id: str = "bootstrap"
+    bootstrap_scopes: list[str] = Field(
+        default_factory=lambda: [
+            "documents:read",
+            "documents:write",
+            "documents:delete",
+            "ingestion:force_reindex",
+        ]
+    )
 
     @model_validator(mode="after")
     def validate_cross_field_policy(self) -> Self:
@@ -73,6 +100,10 @@ class Settings(BaseSettings):
 
         if self.rerank_top_k > self.dense_candidates + self.sparse_candidates:
             raise ValueError("rerank_top_k cannot exceed all retrieval candidates")
+        if self.chunk_target_tokens > self.chunk_max_tokens:
+            raise ValueError("chunk_target_tokens cannot exceed chunk_max_tokens")
+        if self.chunk_overlap_tokens >= self.chunk_target_tokens:
+            raise ValueError("chunk_overlap_tokens must be less than chunk_target_tokens")
 
         if self.environment is not Environment.PRODUCTION:
             return self

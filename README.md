@@ -8,13 +8,6 @@ configuration, health endpoints, project boundaries, Docker scaffolding, CI, and
 regression validation workflow. Ingestion, retrieval, generation, and evaluation are
 added in later phases only after the preceding gate passes.
 
-## Documentation
-
-- [Implementation plan](docs/IMPLEMENTATION_PLAN.md)
-- [Architecture and engineering decisions](docs/ARCHITECTURE.md)
-- [Phase 0 validation guide](docs/PHASE_0_VALIDATION.md)
-- [Threat model](docs/THREAT_MODEL.md)
-
 ## Local development
 
 Requirements:
@@ -57,7 +50,8 @@ Stop the stack without deleting persistent data:
 docker compose down
 ```
 
-Use `scripts/validate_phase_0.py` for the complete repeatable Phase 0 regression gate.
+Use `scripts/validate_phase_1.py` for the complete repeatable Phase 0 and Phase 1
+regression gate.
 
 ## Configuration
 

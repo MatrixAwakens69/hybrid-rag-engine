@@ -8,11 +8,13 @@ from typing import Protocol, runtime_checkable
 
 from app.domain.models import (
     Chunk,
-    DocumentMetadata,
+    DocumentRecord,
     DocumentStatus,
+    DocumentWarning,
     EvidenceItem,
     ParsedDocument,
     TenantPrincipal,
+    VersionManifest,
 )
 
 
@@ -33,7 +35,15 @@ class Parser(Protocol):
     @property
     def version(self) -> str: ...
 
-    async def parse(self, source: Path, *, document_id: str) -> ParsedDocument: ...
+    async def parse(
+        self,
+        source: Path,
+        *,
+        document_id: str,
+        document_version_id: str,
+        tenant_id: str,
+        checksum_sha256: str,
+    ) -> ParsedDocument: ...
 
 
 class Chunker(Protocol):
@@ -105,7 +115,7 @@ class DocumentRepository(Protocol):
         self,
         principal: TenantPrincipal,
         document_id: str,
-    ) -> DocumentMetadata | None: ...
+    ) -> DocumentRecord | None: ...
 
     async def list(
         self,
@@ -113,12 +123,12 @@ class DocumentRepository(Protocol):
         *,
         cursor: str | None,
         limit: int,
-    ) -> tuple[Sequence[DocumentMetadata], str | None]: ...
+    ) -> tuple[Sequence[DocumentRecord], str | None]: ...
 
     async def upsert(
         self,
         principal: TenantPrincipal,
-        document: DocumentMetadata,
+        document: DocumentRecord,
     ) -> None: ...
 
     async def set_status(
@@ -128,6 +138,8 @@ class DocumentRepository(Protocol):
         status: DocumentStatus,
         *,
         failure_code: str | None = None,
+        warnings: Sequence[DocumentWarning] | None = None,
+        versions: VersionManifest | None = None,
     ) -> None: ...
 
     async def delete(self, principal: TenantPrincipal, document_id: str) -> None: ...

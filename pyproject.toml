@@ -9,22 +9,43 @@ description = "Production-oriented multi-tenant hybrid document retrieval servic
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
+    "argon2-cffi>=25.1.0",
+    "charset-normalizer>=3.5.1",
     "fastapi>=0.116",
     "pydantic-settings>=2.10",
+    "python-multipart>=0.0.32",
     "qdrant-client>=1.15",
     "structlog>=25.4",
+    "tiktoken>=0.14.0",
     "uvicorn[standard]>=0.35",
+]
+
+[project.optional-dependencies]
+ingestion = [
+    "docling>=2.120.3",
+    "torch>=2.13.0",
+    "torchvision>=0.28.0",
 ]
 
 [dependency-groups]
 dev = [
     "httpx>=0.28",
+    "hypothesis>=6.165.10",
     "mypy>=1.17",
     "pytest>=8.4",
     "pytest-asyncio>=1.1",
     "pytest-cov>=6.2",
     "ruff>=0.12",
 ]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["app", "worker"]
@@ -45,6 +66,10 @@ strict = true
 warn_unreachable = true
 plugins = ["pydantic.mypy"]
 exclude = ["tests/contract/snapshots"]
+
+[[tool.mypy.overrides]]
+module = ["docling.*", "pypdfium2.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"

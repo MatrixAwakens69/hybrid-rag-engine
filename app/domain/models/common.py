@@ -25,6 +25,18 @@ class TenantPrincipal(ContractModel):
     scopes: frozenset[str] = frozenset()
 
 
+class APIKeyRecord(ContractModel):
+    """Persisted hash-only API-key record."""
+
+    key_id: Identifier
+    tenant_id: Identifier
+    secret_hash: Annotated[str, Field(min_length=32, max_length=1024)]
+    scopes: frozenset[str] = frozenset()
+    enabled: bool = True
+    created_at: datetime
+    expires_at: datetime | None = None
+
+
 class FieldViolation(ContractModel):
     """Bounded validation detail safe to return to a caller."""
 

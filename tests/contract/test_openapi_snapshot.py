@@ -22,8 +22,13 @@ def test_openapi_matches_reviewed_snapshot() -> None:
     )
 
 
-def test_phase_zero_exposes_only_health_routes() -> None:
+def test_phase_one_exposes_only_health_and_document_routes() -> None:
     settings = Settings(_env_file=None, environment=Environment.TEST)
     paths = set(create_app(settings).openapi()["paths"])
 
-    assert paths == {"/health/live", "/health/ready"}
+    assert paths == {
+        "/health/live",
+        "/health/ready",
+        "/v1/documents",
+        "/v1/documents/{document_id}",
+    }

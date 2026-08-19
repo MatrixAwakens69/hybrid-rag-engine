@@ -45,6 +45,7 @@ class SourceLocation(ContractModel):
     line_end: int | None = Field(default=None, ge=1)
     row_start: int | None = Field(default=None, ge=1)
     row_end: int | None = Field(default=None, ge=1)
+    bounding_box: tuple[float, float, float, float] | None = None
     hierarchy_path: list[str] = Field(default_factory=list, max_length=32)
 
     @model_validator(mode="after")

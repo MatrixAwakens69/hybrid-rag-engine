@@ -12,11 +12,11 @@ COPY --from=uv /uv /uvx /bin/
 
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --frozen --no-dev --no-install-project
+RUN uv sync --frozen --no-dev --extra ingestion --no-install-project
 
 COPY app ./app
 COPY worker ./worker
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --extra ingestion
 
 RUN useradd --create-home --uid 10001 appuser \
     && mkdir -p /data/sources /data/jobs /data/quarantine \

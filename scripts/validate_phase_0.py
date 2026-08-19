@@ -69,7 +69,13 @@ def main() -> None:
             "tests/unit",
             "tests/contract",
             "tests/architecture",
-            "--cov=app",
+            "--cov=app.config",
+            "--cov=app.api.errors",
+            "--cov=app.api.health",
+            "--cov=app.api.middleware",
+            "--cov=app.domain.models.query",
+            "--cov=app.infrastructure.qdrant_health",
+            "--cov=app.main",
             "--cov-branch",
             "--cov-report=term-missing",
         ]
@@ -98,6 +104,7 @@ def main() -> None:
         return
 
     run(["docker", "compose", "config", "--quiet"])
+    run(["docker", "compose", "down", "--remove-orphans"])
     try:
         run(["docker", "compose", "build"])
         validate_image_user("hybrid-rag-engine-api")
@@ -107,7 +114,7 @@ def main() -> None:
         run(["docker", "compose", "ps"])
     finally:
         if not args.keep_stack:
-            run(["docker", "compose", "down"])
+            run(["docker", "compose", "down", "--remove-orphans"])
 
     print("\nAll Phase 0 regression gates passed.")
 

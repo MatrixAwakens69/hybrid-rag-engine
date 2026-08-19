@@ -65,6 +65,16 @@ class DocumentStatusResponse(ContractModel):
     versions: VersionManifest
 
 
+class DocumentRecord(ContractModel):
+    """Internal tenant-scoped document control record."""
+
+    tenant_id: Identifier
+    document: DocumentMetadata
+    warnings: list[DocumentWarning] = Field(default_factory=list, max_length=100)
+    failure_code: str | None = Field(default=None, pattern=r"^[a-z0-9_]+$", max_length=64)
+    versions: VersionManifest
+
+
 class DocumentListResponse(ContractModel):
     """Cursor-paginated document listing."""
 
